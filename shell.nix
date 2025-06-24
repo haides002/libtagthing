@@ -1,7 +1,4 @@
-{
-  pkgs ? import <nixpkgs> { },
-}:
-
+{pkgs ? import <nixpkgs> {}}:
 pkgs.mkShell {
   buildInputs = with pkgs; [
     # dev stuff
@@ -14,12 +11,4 @@ pkgs.mkShell {
     pkg-config
     exempi
   ];
-
-  LD_LIBRARY_PATH =
-    with pkgs;
-    lib.makeLibraryPath [
-      libGL
-      libxkbcommon
-      wayland
-    ];
 }
