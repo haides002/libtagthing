@@ -1,7 +1,10 @@
 use std::{error::Error, str::FromStr};
+mod image;
 
 /// Trait shared by all structs that will be representing files
 pub trait Media {
+    /// Constructs a new media given a path to a valid piece of Media
+    fn new(path: &std::path::Path) -> Option<Box<Self>>;
     /// Returns the type of media
     fn media_type(&self) -> MediaType;
     /// Every struct implementing Media will need to point to a file
@@ -13,37 +16,61 @@ pub trait Media {
     /// Date of file creation
     fn date(&self) -> Option<chrono::NaiveDateTime>;
     /// Filesize in ?
-    fn size(&self) -> u64;
+    fn size(&self) -> Result<u64, std::io::Error> {
+        Ok(std::fs::metadata(self.path())?.len())
+    }
 
     /// Returns true if the file passes specified conditions
-    fn matches_filter(filter: &str) -> bool;
+    fn matches_filter(&self, filter: &str) -> bool {
+        todo!()
+    }
     /// Saves modifications to the struct instance to the associated file
-    fn save() -> Result<(), TagError>;
+    fn save(&self) -> Result<(), TagError>;
 
-    /// Returns tags, if the file doesn't support tags None is returned
+    /// Returns tags in an ordered manner, if the file doesn't support tags None is returned
     fn tags(&self) -> Option<&Vec<Tag>>;
     /// Adds a new tag to the file
     fn add_tag(&self, new_tag: Tag) -> Result<(), TagError>;
     /// Removes a tag from the file
     fn remove_tag(&self, tag_to_remove: Tag) -> Result<(), TagError>;
     /// Checks whether the file has the specified tag
-    fn has_tag(&self, tag_to_search: Tag) -> bool;
+    fn has_tag(&self, tag_to_search: Tag) -> bool {
+        match self.tags() {
+            Some(tags) => {
+                for tag in tags {
+                    if *tag == tag_to_search {
+                        return true;
+                    }
+                }
+                false
+            }
+            None => false,
+        }
+    }
 }
 
 /// Specify type of media for more sophisticated functions and handling
 #[non_exhaustive]
-pub enum MediaType {}
+pub enum MediaType {
+    Image,
+}
 
 // Tag Struct ========================================================
 
 /// Stores tag name and connections to namespace or other things
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug)]
 pub struct Tag {
     tag_string: String,
 }
 
 impl Tag {
-    pub fn matches(criteria: &str) -> bool {
+    pub fn new(tag_content: String) -> Self {
+        Self {
+            tag_string: tag_content,
+        }
+    }
+
+    pub fn matches(&self, criteria: &str) -> bool {
         todo!();
     }
 }
