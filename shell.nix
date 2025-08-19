@@ -1,4 +1,6 @@
-{pkgs ? import <nixpkgs> {}}:
+{
+  pkgs ? import <nixpkgs> { },
+}:
 pkgs.mkShell {
   buildInputs = with pkgs; [
     # dev stuff
@@ -10,5 +12,9 @@ pkgs.mkShell {
     # build stuff
     pkg-config
     exempi
+  ];
+
+  nativeBuildInputs = with pkgs; [
+    pkg-config
   ];
 }
