@@ -1,4 +1,5 @@
 use std::{error::Error, str::FromStr};
+mod filter;
 mod image;
 
 /// Trait shared by all structs that will be representing files
