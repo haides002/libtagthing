@@ -811,6 +811,7 @@ dependencies = [
  "allmytoes",
  "chrono",
  "exempi2",
+ "regex",
 ]
 
 [[package]]
