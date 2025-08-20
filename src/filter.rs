@@ -32,7 +32,7 @@ impl Token {
 
 fn parse(filter: String) -> Option<Vec<Token>> {
     let mut tokens: VecDeque<Token> =
-        regex::Regex::new(r#"([\(\)!])|(?:(".*")?("[\w ]+")|([^()"\s]+))"#)
+        regex::Regex::new(r#"([\(\)!])|(?:(".*")?("[\w ]+")|([^()"!\s]+))"#)
             .unwrap()
             .captures_iter(&filter)
             .map(|capture| Token::into(capture.iter().next().unwrap().unwrap().as_str()))
