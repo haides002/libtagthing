@@ -12,6 +12,10 @@ pub trait Media {
     fn path(&self) -> &std::path::Path;
     /// Check whether the file still exists
     fn exists(&self) -> bool;
+    /// Check wheather the file was updated on disk
+    fn was_updated_on_disk(&self) -> Result<bool, TagError>;
+    /// Updates the file to the state on disk
+    fn update(&mut self) -> Result<(), TagError>;
     /// Path for the thumbnail for previews, otherwise None
     fn thumbnail_path(&self) -> Option<&std::path::Path>;
     /// Date of file creation

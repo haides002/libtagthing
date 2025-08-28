@@ -1,3 +1,5 @@
+use std::{fs::metadata, time::SystemTime};
+
 use crate::{Media, Tag};
 
 struct Image {
@@ -5,10 +7,26 @@ struct Image {
     thumbnail_path: Option<std::path::PathBuf>,
     date: Option<chrono::NaiveDateTime>,
     tags: Option<Vec<Tag>>,
+    modified: SystemTime,
 }
 
 impl Media for Image {
     fn new(path: &std::path::Path) -> Option<Box<Self>> {
+        let mut new_image = Image {
+            path: path.to_path_buf(),
+            thumbnail_path: None,
+            date: None,
+            tags: None,
+            modified: SystemTime::now(),
+        };
+
+        match new_image.update() {
+            Ok(_) => Some(Box::new(new_image)),
+            Err(_) => None,
+        }
+    }
+
+    fn update(&mut self) -> Result<(), crate::TagError> {
         use allmytoes::*;
         use exempi2::{OpenFlags, PropFlags, Xmp, XmpFile, XmpString};
 
@@ -17,9 +35,13 @@ impl Media for Image {
         const EXIF_SCHEMA: &str = "http://ns.adobe.com/exif/1.0/";
         const DUBLIN_CORE_SCHEMA: &str = "http://purl.org/dc/elements/1.1/";
 
-        println!("reading file://{}", path.to_str().unwrap());
+        if !self.exists() {
+            return Err(crate::TagError::FileMissing);
+        }
 
-        let xmp: Option<Xmp> = XmpFile::new_from_file(&path, OpenFlags::ONLY_XMP)
+        //println!("reading file://{}", self.path.to_str().unwrap());
+
+        let xmp: Option<Xmp> = XmpFile::new_from_file(&self.path, OpenFlags::ONLY_XMP)
             .expect("failed to read file")
             .get_new_xmp()
             .ok();
@@ -74,18 +96,30 @@ impl Media for Image {
                 force_inbuilt_provider_spec: false,
             };
 
-            match AMT::new(&config).get(&path, THUMBNAIL_SIZE) {
+            match AMT::new(&config).get(&self.path, THUMBNAIL_SIZE) {
                 Ok(thumbnail) => Some(std::path::PathBuf::from(&thumbnail.path)),
                 Err(_) => None,
             }
         }();
 
-        Some(Box::new(Self {
-            path: path.to_path_buf(),
-            thumbnail_path,
-            date,
-            tags,
-        }))
+        let modified = metadata(&self.path).unwrap().modified().unwrap();
+
+        self.thumbnail_path = thumbnail_path;
+        self.date = date;
+        self.tags = tags;
+        self.modified = modified;
+
+        Ok(())
+    }
+
+    fn was_updated_on_disk(&self) -> Result<bool, crate::TagError> {
+        if !self.exists() {
+            return Err(crate::TagError::FileMissing);
+        }
+
+        let modified = metadata(&self.path).unwrap().modified().unwrap();
+
+        Ok(self.modified != modified)
     }
 
     fn media_type(&self) -> crate::MediaType {
