@@ -113,14 +113,35 @@ impl Media for Image {
     }
 
     fn tags(&self) -> Option<&Vec<Tag>> {
-        todo!()
+        match &self.tags {
+            Some(tags) => Some(&tags),
+            None => None,
+        }
     }
 
-    fn add_tag(&self, new_tag: Tag) -> Result<(), crate::TagError> {
-        todo!()
+    fn add_tag(&mut self, new_tag: Tag) -> Result<(), crate::TagError> {
+        match self.tags {
+            Some(ref mut tags) => {
+                tags.push(new_tag);
+                self.save()?;
+                Ok(())
+            }
+            None => Err(crate::TagError::TagsNotSupported),
+        }
     }
 
-    fn remove_tag(&self, tag_to_remove: Tag) -> Result<(), crate::TagError> {
-        todo!()
+    fn remove_tag(&mut self, tag_to_remove: Tag) -> Result<(), crate::TagError> {
+        match self.tags {
+            Some(ref mut tags) => {
+                if let Some(index) = tags.iter().position(|tag| *tag == tag_to_remove) {
+                    tags.remove(index);
+                    self.save()?;
+                    Ok(())
+                } else {
+                    Err(crate::TagError::TagMissing)
+                }
+            }
+            None => Err(crate::TagError::TagsNotSupported),
+        }
     }
 }
