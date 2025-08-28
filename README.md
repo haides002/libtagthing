@@ -23,11 +23,11 @@ And because sidecar files are a hassle for now we won't do any of those either
 # Documentation
 We are using the dc:subject array for storing tags.
 
-We offer subtags and taggrouping. This is what they look like in plain text:
+We offer subtags and namespacing. This is what they look like in plain text:
 
-subtags: nature/tree
+subtags: `nature/tree`
 
-taggroup: person:linus
+namespace: `person:linus`
 
 Internaly the media info is stored in Structs that implement the media trait.
 
