@@ -1,8 +1,7 @@
+use crate::{Media, Tag};
 use std::{fs::metadata, time::SystemTime};
 
-use crate::{Media, Tag};
-
-struct Image {
+pub(crate) struct Image {
     path: std::path::PathBuf,
     thumbnail_path: Option<std::path::PathBuf>,
     date: Option<chrono::NaiveDateTime>,
@@ -10,8 +9,8 @@ struct Image {
     modified: SystemTime,
 }
 
-impl Media for Image {
-    fn new(path: &std::path::Path) -> Option<Box<Self>> {
+impl Image {
+    pub fn new(path: &std::path::Path) -> Option<Box<Self>> {
         let mut new_image = Image {
             path: path.to_path_buf(),
             thumbnail_path: None,
@@ -25,7 +24,9 @@ impl Media for Image {
             Err(_) => None,
         }
     }
+}
 
+impl Media for Image {
     fn update(&mut self) -> Result<(), crate::TagError> {
         use allmytoes::*;
         use exempi2::{OpenFlags, PropFlags, Xmp, XmpFile, XmpString};

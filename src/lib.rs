@@ -2,10 +2,29 @@ use std::{error::Error, str::FromStr};
 mod filter;
 mod image;
 
+/// Read a File at the given path
+pub fn read_file(path: &std::path::Path) -> Result<Box<dyn Media>, TagError> {
+    let file_extension = match path.extension() {
+        Some(extension) => extension.to_str().unwrap(),
+        None => {
+            return Err(TagError::MissingFileExtension);
+        }
+    };
+
+    let media: Box<dyn Media> = match file_extension {
+        "jpg" | "jpeg" | "png" => {
+            crate::image::Image::new(path).ok_or(TagError::CouldNotReadFile)?
+        }
+        _ => {
+            return Err(TagError::UnsupportedFile);
+        }
+    };
+
+    Ok(media)
+}
+
 /// Trait shared by all structs that will be representing files
 pub trait Media {
-    /// Constructs a new media given a path to a valid piece of Media
-    fn new(path: &std::path::Path) -> Option<Box<Self>>;
     /// Returns the type of media
     fn media_type(&self) -> MediaType;
     /// Every struct implementing Media will need to point to a file
@@ -171,6 +190,12 @@ pub enum TagError {
     TagsNotSupported,
     /// The returned character is invalid
     InvalidCharacter(char),
+    /// The file does not have a valid sufix
+    MissingFileExtension,
+    /// The file could not be read
+    CouldNotReadFile,
+    /// Files with this file-extension are not supported.
+    UnsupportedFile,
     /// Other UwU
     UwUpsie,
 }
@@ -186,6 +211,10 @@ impl std::fmt::Display for TagError {
                 TagError::TagMissing => "Selected tag does not exist!".to_string(),
                 TagError::TagsNotSupported => "Tagging is not supported for this file.".to_string(),
                 TagError::InvalidCharacter(char) => format!("\"{char}\" is not a valid char."),
+                TagError::MissingFileExtension => "The File is missing an extension.".to_string(),
+                TagError::CouldNotReadFile => "Could not read file.".to_string(),
+                TagError::UnsupportedFile =>
+                    "Files with this file-extension are not supported.".to_string(),
                 TagError::UwUpsie => "other error".to_string(),
             }
         )
