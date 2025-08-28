@@ -131,7 +131,13 @@ impl Tag {
     }
 
     pub fn matches(&self, criteria: &str) -> bool {
-        todo!();
+        let namespace_regex = regex::Regex::new(r"([\s\w]+:)").unwrap();
+        let tag_no_namespace = namespace_regex.replace_all(&self.tag_string, "");
+
+        let criteria_regex = regex::Regex::new(&format!(r"^((?:{})(?:/.*)?)$", criteria)).unwrap();
+
+        criteria_regex.is_match(&tag_no_namespace)
+        // implement wildcards
     }
 }
 
@@ -201,5 +207,14 @@ mod tests {
     #[test]
     fn tag_from_string_unwrap() {
         Tag::from_str("test").unwrap();
+    }
+
+    #[test]
+    fn foo() {
+        assert!(
+            Tag::from_str("nature:tree/person:john")
+                .unwrap()
+                .matches("tree")
+        );
     }
 }
