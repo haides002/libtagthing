@@ -22,14 +22,73 @@ pub trait Media {
     }
 
     /// Returns true if the file passes specified conditions
-    fn matches_filter(&self, filter: &str) -> bool {
-        todo!()
+    fn matches_filter(&self, fltr: Vec<filter::Token>) -> bool {
+        use filter::*;
+
+        let mut stack: Vec<bool> = Vec::new();
+        for element in fltr {
+            match element {
+                Token::Atom(content) => {
+                    let mut matches: bool = false;
+                    if self.supports_tags() {
+                        for tag in self.tags().expect("has_tags() seems to have returned BS") {
+                            if tag.matches(&content) {
+                                matches = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    stack.push(matches);
+                }
+                Token::Or => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left || right);
+                }
+                Token::Xor => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left ^ right);
+                }
+                Token::And => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left && right);
+                }
+                Token::Xnor => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!(left ^ right));
+                }
+                Token::Nand => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!(left && right));
+                }
+                Token::Not => {
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!left);
+                }
+                Token::GroupOpen => {}
+                Token::GroupClose => {}
+            }
+        }
+
+        // check if the evaluation went cleanly
+        assert!(stack.len() == 1);
+
+        stack.pop().unwrap()
     }
     /// Saves modifications to the struct instance to the associated file
     fn save(&self) -> Result<(), TagError>;
 
     /// Returns tags in an ordered manner, if the file doesn't support tags None is returned
     fn tags(&self) -> Option<&Vec<Tag>>;
+    /// Returns true if the piece of media can hold tags
+    fn supports_tags(&self) -> bool {
+        self.tags().is_some()
+    }
     /// Adds a new tag to the file
     fn add_tag(&self, new_tag: Tag) -> Result<(), TagError>;
     /// Removes a tag from the file

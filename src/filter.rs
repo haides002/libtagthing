@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 #[derive(Debug)]
-enum Token {
+pub enum Token {
     Atom(String),
     Not,
     And,
