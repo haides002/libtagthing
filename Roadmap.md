@@ -2,7 +2,7 @@
 
 ## Short Term
 
-- [ ] make it work
+- [x] filtering evaluation (https://en.wikipedia.org/wiki/Reverse_Polish_notation#Explanation)
 - [ ] basic filetype support
 - [ ] few tests
 

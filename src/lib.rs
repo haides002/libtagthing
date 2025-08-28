@@ -1,50 +1,148 @@
 use std::{error::Error, str::FromStr};
+mod filter;
+mod image;
 
 /// Trait shared by all structs that will be representing files
 pub trait Media {
+    /// Constructs a new media given a path to a valid piece of Media
+    fn new(path: &std::path::Path) -> Option<Box<Self>>;
     /// Returns the type of media
     fn media_type(&self) -> MediaType;
     /// Every struct implementing Media will need to point to a file
     fn path(&self) -> &std::path::Path;
     /// Check whether the file still exists
     fn exists(&self) -> bool;
+    /// Check wheather the file was updated on disk
+    fn was_updated_on_disk(&self) -> Result<bool, TagError>;
+    /// Updates the file to the state on disk
+    fn update(&mut self) -> Result<(), TagError>;
     /// Path for the thumbnail for previews, otherwise None
     fn thumbnail_path(&self) -> Option<&std::path::Path>;
     /// Date of file creation
     fn date(&self) -> Option<chrono::NaiveDateTime>;
     /// Filesize in ?
-    fn size(&self) -> u64;
+    fn size(&self) -> Result<u64, std::io::Error> {
+        Ok(std::fs::metadata(self.path())?.len())
+    }
 
     /// Returns true if the file passes specified conditions
-    fn matches_filter(filter: &str) -> bool;
-    /// Saves modifications to the struct instance to the associated file
-    fn save() -> Result<(), TagError>;
+    fn matches_filter(&self, fltr: Vec<filter::Token>) -> bool {
+        use filter::*;
 
-    /// Returns tags, if the file doesn't support tags None is returned
+        let mut stack: Vec<bool> = Vec::new();
+        for element in fltr {
+            match element {
+                Token::Atom(content) => {
+                    let mut matches: bool = false;
+                    if self.supports_tags() {
+                        for tag in self.tags().expect("has_tags() seems to have returned BS") {
+                            if tag.matches(&content) {
+                                matches = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    stack.push(matches);
+                }
+                Token::Or => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left || right);
+                }
+                Token::Xor => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left ^ right);
+                }
+                Token::And => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left && right);
+                }
+                Token::Xnor => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!(left ^ right));
+                }
+                Token::Nand => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!(left && right));
+                }
+                Token::Not => {
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!left);
+                }
+                Token::GroupOpen => {}
+                Token::GroupClose => {}
+            }
+        }
+
+        // check if the evaluation went cleanly
+        assert!(stack.len() == 1);
+
+        stack.pop().unwrap()
+    }
+    /// Saves modifications to the struct instance to the associated file
+    fn save(&self) -> Result<(), TagError>;
+
+    /// Returns tags in an ordered manner, if the file doesn't support tags None is returned
     fn tags(&self) -> Option<&Vec<Tag>>;
+    /// Returns true if the piece of media can hold tags
+    fn supports_tags(&self) -> bool {
+        self.tags().is_some()
+    }
     /// Adds a new tag to the file
-    fn add_tag(&self, new_tag: Tag) -> Result<(), TagError>;
+    fn add_tag(&mut self, new_tag: Tag) -> Result<(), TagError>;
     /// Removes a tag from the file
-    fn remove_tag(&self, tag_to_remove: Tag) -> Result<(), TagError>;
+    fn remove_tag(&mut self, tag_to_remove: Tag) -> Result<(), TagError>;
     /// Checks whether the file has the specified tag
-    fn has_tag(&self, tag_to_search: Tag) -> bool;
+    fn has_tag(&self, tag_to_search: Tag) -> bool {
+        match self.tags() {
+            Some(tags) => {
+                for tag in tags {
+                    if *tag == tag_to_search {
+                        return true;
+                    }
+                }
+                false
+            }
+            None => false,
+        }
+    }
 }
 
 /// Specify type of media for more sophisticated functions and handling
 #[non_exhaustive]
-pub enum MediaType {}
+pub enum MediaType {
+    Image,
+}
 
 // Tag Struct ========================================================
 
 /// Stores tag name and connections to namespace or other things
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug)]
 pub struct Tag {
     tag_string: String,
 }
 
 impl Tag {
-    pub fn matches(criteria: &str) -> bool {
-        todo!();
+    pub fn new(tag_content: String) -> Self {
+        Self {
+            tag_string: tag_content,
+        }
+    }
+
+    pub fn matches(&self, criteria: &str) -> bool {
+        let namespace_regex = regex::Regex::new(r"([\s\w]+:)").unwrap();
+        let tag_no_namespace = namespace_regex.replace_all(&self.tag_string, "");
+
+        let criteria_wildcard_support = criteria.replace("*", ".*");
+        let criteria_regex =
+            regex::Regex::new(&format!(r"^((?:{})(?:/.*)?)$", criteria_wildcard_support)).unwrap();
+
+        criteria_regex.is_match(&tag_no_namespace)
     }
 }
 
@@ -69,6 +167,8 @@ pub enum TagError {
     OtherSaveError,
     /// The tag does not exist
     TagMissing,
+    /// Tagging is not supported for the file
+    TagsNotSupported,
     /// The returned character is invalid
     InvalidCharacter(char),
     /// Other UwU
@@ -84,6 +184,7 @@ impl std::fmt::Display for TagError {
                 TagError::FileMissing => "File Missing.".to_string(),
                 TagError::OtherSaveError => "The file could not be saved.".to_string(),
                 TagError::TagMissing => "Selected tag does not exist!".to_string(),
+                TagError::TagsNotSupported => "Tagging is not supported for this file.".to_string(),
                 TagError::InvalidCharacter(char) => format!("\"{char}\" is not a valid char."),
                 TagError::UwUpsie => "other error".to_string(),
             }
@@ -114,5 +215,18 @@ mod tests {
     #[test]
     fn tag_from_string_unwrap() {
         Tag::from_str("test").unwrap();
+    }
+
+    #[test]
+    fn tag_matching() {
+        let tag = Tag::from_str("nature:tree/person:john").unwrap();
+
+        assert!(tag.matches("*"));
+        assert!(tag.matches("tree"));
+        assert!(tag.matches("tr*"));
+        assert!(tag.matches("tr*e"));
+        assert!(tag.matches("tree/john"));
+
+        assert!(!tag.matches("john"));
     }
 }
