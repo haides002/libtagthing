@@ -134,10 +134,11 @@ impl Tag {
         let namespace_regex = regex::Regex::new(r"([\s\w]+:)").unwrap();
         let tag_no_namespace = namespace_regex.replace_all(&self.tag_string, "");
 
-        let criteria_regex = regex::Regex::new(&format!(r"^((?:{})(?:/.*)?)$", criteria)).unwrap();
+        let criteria_wildcard_support = criteria.replace("*", ".*");
+        let criteria_regex =
+            regex::Regex::new(&format!(r"^((?:{})(?:/.*)?)$", criteria_wildcard_support)).unwrap();
 
         criteria_regex.is_match(&tag_no_namespace)
-        // implement wildcards
     }
 }
 
@@ -210,11 +211,15 @@ mod tests {
     }
 
     #[test]
-    fn foo() {
-        assert!(
-            Tag::from_str("nature:tree/person:john")
-                .unwrap()
-                .matches("tree")
-        );
+    fn tag_matching() {
+        let tag = Tag::from_str("nature:tree/person:john").unwrap();
+
+        assert!(tag.matches("*"));
+        assert!(tag.matches("tree"));
+        assert!(tag.matches("tr*"));
+        assert!(tag.matches("tr*e"));
+        assert!(tag.matches("tree/john"));
+
+        assert!(!tag.matches("john"));
     }
 }
