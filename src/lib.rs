@@ -90,9 +90,9 @@ pub trait Media {
         self.tags().is_some()
     }
     /// Adds a new tag to the file
-    fn add_tag(&self, new_tag: Tag) -> Result<(), TagError>;
+    fn add_tag(&mut self, new_tag: Tag) -> Result<(), TagError>;
     /// Removes a tag from the file
-    fn remove_tag(&self, tag_to_remove: Tag) -> Result<(), TagError>;
+    fn remove_tag(&mut self, tag_to_remove: Tag) -> Result<(), TagError>;
     /// Checks whether the file has the specified tag
     fn has_tag(&self, tag_to_search: Tag) -> bool {
         match self.tags() {
@@ -163,6 +163,8 @@ pub enum TagError {
     OtherSaveError,
     /// The tag does not exist
     TagMissing,
+    /// Tagging is not supported for the file
+    TagsNotSupported,
     /// The returned character is invalid
     InvalidCharacter(char),
     /// Other UwU
@@ -178,6 +180,7 @@ impl std::fmt::Display for TagError {
                 TagError::FileMissing => "File Missing.".to_string(),
                 TagError::OtherSaveError => "The file could not be saved.".to_string(),
                 TagError::TagMissing => "Selected tag does not exist!".to_string(),
+                TagError::TagsNotSupported => "Tagging is not supported for this file.".to_string(),
                 TagError::InvalidCharacter(char) => format!("\"{char}\" is not a valid char."),
                 TagError::UwUpsie => "other error".to_string(),
             }
