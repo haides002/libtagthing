@@ -27,7 +27,12 @@ We offer subtags and namespacing. This is what they look like in plain text:
 
 subtags: `nature/tree`
 
-namespace: `person:linus`
+namespace: `person:john`
+
+Namespaces and Tags are allowed to have spaces in them, so `person I know :john doe` is valid.
+
+Apart from `:` and `/` all characters are allowed.
+
 
 Internaly the media info is stored in Structs that implement the media trait.
 
