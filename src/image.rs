@@ -42,10 +42,10 @@ impl Media for Image {
 
         //println!("reading file://{}", self.path.to_str().unwrap());
 
-        let xmp: Option<Xmp> = XmpFile::new_from_file(&self.path, OpenFlags::ONLY_XMP)
-            .expect("failed to read file")
-            .get_new_xmp()
-            .ok();
+        let xmp: Option<Xmp> = match XmpFile::new_from_file(&self.path, OpenFlags::ONLY_XMP) {
+            Ok(xmp_file) => xmp_file.get_new_xmp().ok(),
+            Err(_) => None,
+        };
 
         let tags = || -> Option<Vec<Tag>> {
             let mut tags: Vec<Tag> = Vec::new();
@@ -67,7 +67,7 @@ impl Media for Image {
         }();
 
         let date = || -> Option<chrono::NaiveDateTime> {
-            let formats: Vec<&str> = vec!["%+", "%FT%T", "%FT%T%.f"];
+            let formats: Vec<&str> = vec!["%+", "%FT%T", "%FT%T%.f", "%Y-%m-%d"];
 
             let exif_date: Result<XmpString, exempi2::Error> =
                 xmp.clone()?
@@ -84,7 +84,10 @@ impl Media for Image {
                 .nth(0)
             {
                 Some(date) => Some(date.unwrap()),
-                None => panic!("unknown date format for date: {}", date.to_str().unwrap()),
+                None => {
+                    eprintln!("unknown date format for date: '{}'", date.to_str().unwrap());
+                    None
+                }
             }
         }();
 
