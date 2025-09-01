@@ -1,5 +1,5 @@
 use std::{error::Error, str::FromStr};
-mod filter;
+pub mod filter;
 mod image;
 
 /// Read a File at the given path
@@ -47,7 +47,7 @@ pub trait Media {
     }
 
     /// Returns true if the file passes specified conditions
-    fn matches_filter(&self, fltr: Vec<filter::Token>) -> bool {
+    fn matches_filter(&self, fltr: &Vec<filter::Token>) -> bool {
         use filter::*;
 
         let mut stack: Vec<bool> = Vec::new();
