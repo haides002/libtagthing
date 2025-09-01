@@ -176,6 +176,11 @@ impl FromStr for Tag {
         })
     }
 }
+impl ToString for Tag {
+    fn to_string(&self) -> String {
+        self.tag_string.clone()
+    }
+}
 
 // Tag Errors ========================================================
 
