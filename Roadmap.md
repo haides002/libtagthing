@@ -7,6 +7,7 @@
 - [ ] basic filetype support
 - [ ] few tests
 - [x] separate thumbnail generation into own method to support async
+- [ ] Switch XMP library
 
 ## Mid Term
 
