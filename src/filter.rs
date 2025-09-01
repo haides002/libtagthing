@@ -30,7 +30,7 @@ impl Token {
     }
 }
 
-fn parse(filter: String) -> Option<Vec<Token>> {
+pub fn parse(filter: String) -> Option<Vec<Token>> {
     let mut tokens: VecDeque<Token> =
         regex::Regex::new(r#"([\(\)!])|(?:(".*")?("[^"]+")|([^()"!\s]+))"#)
             .unwrap()
