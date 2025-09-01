@@ -24,6 +24,24 @@ impl Image {
             Err(_) => None,
         }
     }
+    pub fn repair(&mut self) {
+        // if we can get the tags we don't need to repair nothing
+        if self.tags().is_some() {
+            return;
+        }
+
+        //let possible_file =
+        //    exempi2::XmpFile::new_from_file(&self.path(), exempi2::OpenFlags::REPAIR_FILE);
+        //match possible_file {
+        //    Ok(mut file) => {
+        //        println!("Repairing...");
+        //        if let Ok(xmp) = file.get_new_xmp() {
+        //            dbg!(xmp.serialize(exempi2::SerialFlags::all(), 2));
+        //        }
+        //    }
+        //    Err(_) => {}
+        //}
+    }
 }
 const EXIF_SCHEMA: &str = "http://ns.adobe.com/exif/1.0/";
 const DUBLIN_CORE_SCHEMA: &str = "http://purl.org/dc/elements/1.1/";
@@ -151,6 +169,8 @@ impl Media for Image {
 
     fn save(&self) -> Result<(), crate::TagError> {
         use exempi2::{PropFlags, Xmp, XmpFile};
+
+        // Return if tags are not supported
         if self.tags.is_none() {
             return Err(crate::TagError::TagsNotSupported);
         }
