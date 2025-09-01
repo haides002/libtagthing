@@ -25,13 +25,12 @@ impl Image {
         }
     }
 }
+const EXIF_SCHEMA: &str = "http://ns.adobe.com/exif/1.0/";
+const DUBLIN_CORE_SCHEMA: &str = "http://purl.org/dc/elements/1.1/";
 
 impl Media for Image {
     fn update(&mut self) -> Result<(), crate::TagError> {
         use exempi2::{OpenFlags, PropFlags, Xmp, XmpFile, XmpString};
-
-        const EXIF_SCHEMA: &str = "http://ns.adobe.com/exif/1.0/";
-        const DUBLIN_CORE_SCHEMA: &str = "http://purl.org/dc/elements/1.1/";
 
         if !self.exists() {
             return Err(crate::TagError::FileMissing);
@@ -151,7 +150,35 @@ impl Media for Image {
     }
 
     fn save(&self) -> Result<(), crate::TagError> {
-        todo!()
+        use exempi2::{PropFlags, Xmp, XmpFile};
+        if self.tags.is_none() {
+            return Err(crate::TagError::TagsNotSupported);
+        }
+        let mut file = match XmpFile::new_from_file(&self.path, exempi2::OpenFlags::FOR_UPDATE) {
+            Ok(file) => file,
+            Err(_) => return Err(crate::TagError::CouldNotReadFile),
+        };
+
+        let mut xmp = Xmp::new();
+        let mut flags = PropFlags::default();
+        flags.insert(PropFlags::VALUE_IS_ARRAY);
+        flags.insert(PropFlags::ARRAY_IS_UNORDERED);
+
+        if let Some(tag_vec) = &self.tags {
+            for tag in tag_vec {
+                let _ = xmp.append_array_item(
+                    DUBLIN_CORE_SCHEMA,
+                    "dc:subject",
+                    flags,
+                    &tag.tag_string,
+                    PropFlags::default(),
+                );
+            }
+        }
+
+        let _ = file.put_xmp(&xmp);
+        let _ = file.close(exempi2::CloseFlags::SAFE_UPDATE);
+        Ok(())
     }
 
     fn tags(&self) -> Option<&Vec<Tag>> {
@@ -165,6 +192,7 @@ impl Media for Image {
         match self.tags {
             Some(ref mut tags) => {
                 tags.push(new_tag);
+                tags.dedup();
                 self.save()?;
                 Ok(())
             }
