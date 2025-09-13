@@ -13,13 +13,14 @@ pub fn read_file(path: &std::path::Path) -> Result<Box<dyn Media>, TagError> {
 
     let media: Box<dyn Media> = match file_extension {
         "jpg" | "jpeg" | "png" => {
-            crate::image::Image::new(path).ok_or(TagError::CouldNotReadFile)?
+            let mut new_media = crate::image::Image::new(path).ok_or(TagError::CouldNotReadFile)?;
+            new_media.repair();
+            new_media
         }
         _ => {
             return Err(TagError::UnsupportedFile);
         }
     };
-
     Ok(media)
 }
 
@@ -174,6 +175,11 @@ impl FromStr for Tag {
         Ok(Tag {
             tag_string: s.to_owned(),
         })
+    }
+}
+impl ToString for Tag {
+    fn to_string(&self) -> String {
+        self.tag_string.clone()
     }
 }
 
