@@ -30,6 +30,68 @@ impl Token {
     }
 }
 
+impl crate::Media {
+    /// Returns true if the file passes specified conditions
+    pub fn matches_filter(&self, fltr: &Vec<crate::filter::Token>) -> bool {
+        use crate::filter::*;
+
+        let mut stack: Vec<bool> = Vec::new();
+        for element in fltr {
+            match element {
+                Token::Atom(content) => {
+                    let mut matches: bool = false;
+                    if self.supports_tags() {
+                        for tag in self.tags().expect("has_tags() seems to have returned BS") {
+                            if tag.matches(content) {
+                                matches = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    stack.push(matches);
+                }
+                Token::Or => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left || right);
+                }
+                Token::Xor => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left ^ right);
+                }
+                Token::And => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(left && right);
+                }
+                Token::Xnor => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!(left ^ right));
+                }
+                Token::Nand => {
+                    let right = stack.pop().expect("faulty filter.");
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!(left && right));
+                }
+                Token::Not => {
+                    let left = stack.pop().expect("faulty filter.");
+                    stack.push(!left);
+                }
+                Token::GroupOpen => {}
+                Token::GroupClose => {}
+            }
+        }
+
+        // check if the evaluation went cleanly
+        assert!(stack.len() == 1);
+
+        stack.pop().unwrap()
+    }
+}
+
 pub fn parse(filter: String) -> Option<Vec<Token>> {
     let mut tokens: VecDeque<Token> =
         regex::Regex::new(r#"([\(\)!])|(?:(".*")?("[^"]+")|([^()"!\s]+))"#)
