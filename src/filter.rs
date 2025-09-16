@@ -1,15 +1,25 @@
 use std::collections::VecDeque;
 
 #[derive(Debug)]
+/// Token enum for evaluating filters
 pub enum Token {
+    /// Tags and not recognized operators
     Atom(String),
+    /// Not operation
     Not,
+    /// And operation
     And,
+    /// Or operation
     Or,
+    /// Nand operation
     Nand,
+    /// Xor operation
     Xor,
+    /// Xnor operation
     Xnor,
+    /// (
     GroupOpen,
+    /// )
     GroupClose,
 }
 
@@ -92,6 +102,9 @@ impl crate::Media {
     }
 }
 
+/// Parses an input string into a vec of tokens
+///
+/// Returns None if the filter couldn't be parsed
 pub fn parse(filter: String) -> Option<Vec<Token>> {
     let mut tokens: VecDeque<Token> =
         regex::Regex::new(r#"([\(\)!])|(?:(".*")?("[^"]+")|([^()"!\s]+))"#)
