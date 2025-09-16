@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-allmytoes = "0.4.0"
-chrono = "0.4.41"
-exempi2 = "0.3.0"
+chrono = "0.4.42"
 regex = "1.11.1"
+xmp_toolkit = { version = "1.11.0", features = ["chrono"] }
