@@ -12,5 +12,5 @@ pub use crate::tag::Tag;
 pub fn read_file(path: &std::path::Path) -> Result<Media, TagError> {
     let new_media = Media::new(path).ok_or(TagError::CouldNotReadFile)?;
 
-    Ok(*new_media)
+    Ok(new_media)
 }

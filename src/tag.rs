@@ -9,13 +9,15 @@ pub struct Tag {
 }
 
 impl Tag {
+    /// Creates a new tag from the string
     pub fn new(tag_content: String) -> Self {
         Self {
             tag_string: tag_content,
         }
     }
 
-    pub fn matches(&self, criteria: &str) -> bool {
+    /// Checks whether the tag matches the given criteria
+    pub(crate) fn matches(&self, criteria: &str) -> bool {
         let namespace_regex = regex::Regex::new(r"([\s\w]+:)").unwrap();
         let tag_no_namespace = namespace_regex.replace_all(&self.tag_string, "");
 
