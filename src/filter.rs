@@ -144,6 +144,27 @@ pub fn parse(filter: String) -> Option<Vec<Token>> {
     Some(out)
 }
 
+/// Applies a filter given as a `String` to the given `Vec`. Returns `None` if given an invalid
+/// filter.
+/// This clones all matching media instances, but performance should be fine as the Media struct
+/// does not contain much data.
+pub fn apply_filter(medias: &Vec<crate::Media>, query: String) -> Option<Vec<crate::Media>> {
+    let fltr: Vec<Token> = crate::filter::parse(query)?;
+
+    Some(
+        medias
+            .iter()
+            .filter_map(|media| -> Option<crate::Media> {
+                if media.matches_filter(&fltr) {
+                    Some(media.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<crate::Media>>(),
+    )
+}
+
 #[cfg(test)]
 mod filter_tests {
     use crate::filter::parse;
