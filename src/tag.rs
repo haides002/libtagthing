@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::TagError;
 
 /// Stores tag name and connections to namespace or other things
-#[derive(PartialEq, PartialOrd, Ord, Eq, Debug)]
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct Tag {
     pub tag_string: String,
 }

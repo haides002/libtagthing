@@ -1,13 +1,13 @@
 use crate::Tag;
 use std::time::SystemTime;
 
-#[derive(Debug)]
 /// Media struct representing a file
 ///
 /// Can contain tags, if tags are supported the tags field is Some()
 /// Also contains a path pointing to the file on disk
 /// A date read from the xmp metadata as that is more reliable than filesystem dates
 /// And a modified time to check whether the file was modified since it was read into the struct
+#[derive(Debug, Clone)]
 pub struct Media {
     pub(crate) path: std::path::PathBuf,
     pub(crate) date: Option<chrono::DateTime<chrono::FixedOffset>>,

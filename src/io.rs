@@ -117,3 +117,45 @@ impl Media {
         }
     }
 }
+
+/// Reads a given path into a `Vec<Media>`. The path can be a directory or a file. Setting recursive
+/// to true will also read out subdirectories.
+pub fn read_path(path: std::path::PathBuf, recursive: bool) -> Vec<crate::Media> {
+    /// Read a File at the given path
+    fn read_file(path: &std::path::Path) -> Result<Media, TagError> {
+        let new_media = Media::new(path).ok_or(TagError::CouldNotReadFile)?;
+
+        Ok(new_media)
+    }
+
+    let mut media_collection: Vec<crate::Media> = Vec::new();
+    let mut todo_paths: Vec<std::path::PathBuf> = vec![path];
+    let mut current_path: std::path::PathBuf;
+
+    while !todo_paths.is_empty() {
+        current_path = todo_paths.pop().expect("Non-empty vec couldn't pop");
+
+        assert!(
+            current_path.is_dir() ^ current_path.is_file(),
+            "What the FUCK!"
+        );
+
+        if current_path.is_dir() {
+            todo_paths.append(
+                &mut current_path
+                    .read_dir()
+                    .expect("Directory couldn't get read")
+                    .map(|p| p.unwrap().path())
+                    // Per de Moorgans law, !(p.is_dir() && !recursive) could also be written as !p.is_dir() || recursive, idiot.
+                    .filter(|p| !(p.is_dir() && !recursive))
+                    .collect(),
+            )
+        } else if current_path.is_file()
+            && let Ok(new_image) = read_file(current_path.as_path())
+        {
+            media_collection.push(new_image)
+        }
+    }
+
+    media_collection
+}
