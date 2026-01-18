@@ -45,6 +45,10 @@ impl crate::Media {
     pub fn matches_filter(&self, fltr: &Vec<crate::filter::Token>) -> bool {
         use crate::filter::*;
 
+        if fltr.is_empty() {
+            return true;
+        }
+
         let mut stack: Vec<bool> = Vec::new();
         for element in fltr {
             match element {
@@ -110,15 +114,31 @@ pub fn parse(filter: String) -> Option<Vec<Token>> {
         regex::Regex::new(r#"([\(\)!])|(?:(".*")?("[^"]+")|([^()"!\s]+))"#)
             .unwrap()
             .captures_iter(&filter)
-            .map(|capture| Token::into(capture.iter().next().unwrap().unwrap().as_str()))
+            .map(|capture| {
+                Token::into(
+                    capture
+                        .iter()
+                        .next()
+                        .unwrap()
+                        .unwrap()
+                        .as_str()
+                        .replace("\"", "")
+                        .as_str(),
+                )
+            })
             .collect();
 
     let mut stack: Vec<Token> = Vec::new();
     let mut out: Vec<Token> = Vec::new();
+    let mut previous_was_atom = false;
     while !tokens.is_empty() {
         let token = tokens.pop_front().unwrap();
         match token {
             Token::Atom(_) => {
+                if previous_was_atom {
+                    stack.push(Token::And);
+                }
+                previous_was_atom = true;
                 out.push(token);
             }
             Token::Not => {
