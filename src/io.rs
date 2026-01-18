@@ -121,6 +121,10 @@ impl Media {
 /// Reads a given path into a `Vec<Media>`. The path can be a directory or a file. Setting recursive
 /// to true will also read out subdirectories.
 pub fn read_path(path: std::path::PathBuf, recursive: bool) -> Vec<crate::Media> {
+    let path = path
+        .canonicalize()
+        .expect("WHat the fuckc did you deo to your firle systemb ????!!!!");
+
     /// Read a File at the given path
     fn read_file(path: &std::path::Path) -> Result<Media, TagError> {
         let new_media = Media::new(path).ok_or(TagError::CouldNotReadFile)?;
