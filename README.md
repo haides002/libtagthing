@@ -34,7 +34,7 @@ Namespaces and Tags are allowed to have spaces in them, so `person I know :john 
 Apart from `:` and `/` all characters are allowed.
 
 
-Internaly the media info is stored in Structs that implement the media trait.
+Internally the media info is stored in Structs that implement the media trait.
 
 ## Filtering
 
