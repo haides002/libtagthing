@@ -166,22 +166,33 @@ pub fn parse(filter: String) -> Option<Vec<Token>> {
 
 /// Applies a filter given as a `String` to the given `Vec`. Returns `None` if given an invalid
 /// filter.
-/// This clones all matching media instances, but performance should be fine as the Media struct
+/// This not clones all matching media instances, but performance should be fine as the Media struct
 /// does not contain much data.
-pub fn apply_filter(medias: &Vec<crate::Media>, query: String) -> Option<Vec<crate::Media>> {
+pub fn apply_filter(medias: &[crate::Media], query: String) -> Option<Vec<&crate::Media>> {
     let fltr: Vec<Token> = crate::filter::parse(query)?;
 
     Some(
         medias
             .iter()
-            .filter_map(|media| -> Option<crate::Media> {
+            .filter(|media| -> bool { media.matches_filter(&fltr) })
+            .collect::<Vec<&crate::Media>>(),
+    )
+}
+
+pub fn get_matching_indicies(medias: &[crate::Media], query: String) -> Option<Vec<usize>> {
+    let fltr: Vec<Token> = crate::filter::parse(query)?;
+    Some(
+        medias
+            .iter()
+            .enumerate()
+            .filter_map(|(index, media)| -> Option<usize> {
                 if media.matches_filter(&fltr) {
-                    Some(media.clone())
+                    Some(index)
                 } else {
                     None
                 }
             })
-            .collect::<Vec<crate::Media>>(),
+            .collect(),
     )
 }
 
