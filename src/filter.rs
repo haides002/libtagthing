@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 #[derive(Debug)]
 /// Token enum for evaluating filters
 pub enum Token {
@@ -144,7 +142,51 @@ pub fn parse(filter: String) -> Option<Vec<Token>> {
         i += 1;
     }
 
-    // TODO: validate the filter here
+    // validate the filter
+    // step 1: check token order
+    let mut i: usize = 0;
+    while i < tokens.len().saturating_sub(1) {
+        use Token::*;
+        match (&tokens[i], &tokens[i + 1]) {
+            (Not, GroupOpen | Atom(_)) => {}
+            (And | Or | Xor | Nand | Xnor, Not | Atom(_) | GroupOpen) => {}
+            (GroupOpen, Not | GroupOpen | Atom(_)) => {}
+            (GroupClose, GroupClose | And | Or | Xor | Nand | Xnor) => {}
+            (Atom(_), And | Or | Xor | Nand | Xnor | GroupClose) => {}
+            _ => return None,
+        };
+        i += 1;
+    }
+
+    // step 2: check beninigging and end
+    match tokens.first() {
+        Some(Token::GroupOpen | Token::Atom(_) | Token::Not) => {}
+        None => {}
+        _ => return None,
+    }
+    match tokens.last() {
+        Some(Token::GroupClose | Token::Atom(_)) => {}
+        None => {}
+        _ => return None,
+    }
+
+    // step 3: validate the parentheses
+    let mut p: isize = 0;
+    for token in &tokens {
+        match token {
+            Token::GroupOpen => p += 1,
+            Token::GroupClose => {
+                p -= 1;
+                if p < 0 {
+                    return None;
+                }
+            }
+            _ => {}
+        }
+    }
+    if p != 0 {
+        return None;
+    }
 
     // doing this is fine here because the vec is not that large and we only do this once
     tokens.reverse();
