@@ -25,10 +25,14 @@ impl Media {
             use chrono::{DateTime, FixedOffset};
             use xmp_toolkit::XmpDateTime;
 
-            let xmp_date: XmpDateTime = xmp
+            let mut xmp_date: XmpDateTime = xmp
                 .clone()?
                 .property_date(xmp_ns::EXIF, "DateTimeOriginal")?
                 .value;
+
+            if xmp_date.clone().time?.time_zone.is_none() {
+                let _ = xmp_date.set_local_time_zone();
+            }
 
             let chrono_date: DateTime<FixedOffset> = xmp_date.try_into().ok()?;
 
