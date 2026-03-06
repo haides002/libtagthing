@@ -2,7 +2,7 @@
 /// Token enum for evaluating filters
 pub enum Token {
     /// Tags and not recognized operators
-    Atom(String),
+    Atom(regex::Regex),
     /// Not operation
     Not,
     /// And operation
@@ -33,7 +33,14 @@ impl Token {
             "XNOR" => Self::Xnor,
             "(" => Self::GroupOpen,
             ")" => Self::GroupClose,
-            &_ => Self::Atom(token.to_string()),
+            &_ => {
+                let criteria_wildcard_support = token.replace("*", ".*");
+                let criteria_regex =
+                    regex::Regex::new(&format!(r"^((?:{})(?:/.*)?)$", criteria_wildcard_support))
+                        .unwrap();
+
+                Self::Atom(criteria_regex)
+            }
         }
     }
 }

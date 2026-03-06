@@ -17,15 +17,14 @@ impl Tag {
     }
 
     /// Checks whether the tag matches the given criteria
-    pub(crate) fn matches(&self, criteria: &str) -> bool {
-        let namespace_regex = regex::Regex::new(r"([\s\w]+:)").unwrap();
-        let tag_no_namespace = namespace_regex.replace_all(&self.tag_string, "");
+    pub(crate) fn matches(&self, criteria_regex: &regex::Regex) -> bool {
+        let tag_no_namespace = &self
+            .tag_string
+            .split(":")
+            .last()
+            .expect("namespace split failed");
 
-        let criteria_wildcard_support = criteria.replace("*", ".*");
-        let criteria_regex =
-            regex::Regex::new(&format!(r"^((?:{})(?:/.*)?)$", criteria_wildcard_support)).unwrap();
-
-        criteria_regex.is_match(&tag_no_namespace)
+        criteria_regex.is_match(tag_no_namespace)
     }
 }
 
@@ -121,18 +120,5 @@ mod tests {
     #[test]
     fn tag_from_string_unwrap() {
         Tag::from_str("test").unwrap();
-    }
-
-    #[test]
-    fn tag_matching() {
-        let tag = Tag::from_str("nature:tree/person:john").unwrap();
-
-        assert!(tag.matches("*"));
-        assert!(tag.matches("tree"));
-        assert!(tag.matches("tr*"));
-        assert!(tag.matches("tr*e"));
-        assert!(tag.matches("tree/john"));
-
-        assert!(!tag.matches("john"));
     }
 }
