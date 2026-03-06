@@ -91,8 +91,8 @@ impl crate::Media {
                     stack.push(!(left && right));
                 }
                 Token::Not => {
-                    let left = stack.pop().expect("faulty filter.");
-                    stack.push(!left);
+                    let right = stack.pop().expect("faulty filter.");
+                    stack.push(!right);
                 }
                 Token::GroupOpen => {}
                 Token::GroupClose => {}
@@ -110,7 +110,7 @@ impl crate::Media {
 ///
 /// Returns None if the filter couldn't be parsed
 pub fn parse(filter: String) -> Option<Vec<Token>> {
-    let mut tokens: VecDeque<Token> =
+    let mut tokens: Vec<Token> =
         regex::Regex::new(r#"([\(\)!])|(?:(".*")?("[^"]+")|([^()"!\s]+))"#)
             .unwrap()
             .captures_iter(&filter)
@@ -128,40 +128,56 @@ pub fn parse(filter: String) -> Option<Vec<Token>> {
             })
             .collect();
 
-    let mut stack: Vec<Token> = Vec::new();
-    let mut out: Vec<Token> = Vec::new();
-    let mut previous_was_atom = false;
-    while !tokens.is_empty() {
-        let token = tokens.pop_front().unwrap();
+    // insert implicit ANDs
+    let mut i: isize = 0;
+    while i < tokens.len() as isize - 1 {
+        assert!(i >= 0);
+        match tokens[i as usize] {
+            Token::Atom(_) | Token::GroupClose => match tokens[(i + 1) as usize] {
+                Token::Atom(_) | Token::Not | Token::GroupOpen => {
+                    tokens.insert((i + 1) as usize, Token::And);
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+        i += 1;
+    }
+
+    // TODO: validate the filter here
+
+    // doing this is fine here because the vec is not that large and we only do this once
+    tokens.reverse();
+
+    let mut operator_stack: Vec<Token> = Vec::new();
+    let mut output_stack: Vec<Token> = Vec::new();
+    for token in tokens {
         match token {
             Token::Atom(_) => {
-                if previous_was_atom {
-                    stack.push(Token::And);
-                }
-                previous_was_atom = true;
-                out.push(token);
+                output_stack.push(token);
             }
             Token::Not => {
-                out.push(tokens.pop_front()?);
-                out.push(token);
+                output_stack.push(token);
             }
-            Token::GroupClose => {
-                while let Some(operator) = stack.pop() {
+            Token::GroupOpen => {
+                while let Some(operator) = operator_stack.pop() {
                     match operator {
-                        Token::GroupOpen => break,
-                        _ => out.push(operator),
+                        Token::GroupClose => break,
+                        _ => output_stack.push(operator),
                     }
                 }
             }
-            _ => stack.push(token),
+            _ => {
+                operator_stack.push(token);
+            }
         }
     }
 
-    while let Some(operator) = stack.pop() {
-        out.push(operator);
+    while let Some(operator) = operator_stack.pop() {
+        output_stack.push(operator);
     }
 
-    Some(out)
+    Some(output_stack)
 }
 
 /// Applies a filter given as a `String` to the given `Vec`. Returns `None` if given an invalid
