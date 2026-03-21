@@ -59,7 +59,7 @@ impl crate::Media {
             match element {
                 Token::Atom(content) => {
                     let mut matches: bool = false;
-                    if self.supports_tags() {
+                    if self.supports_xmp() {
                         for tag in self.tags().expect("has_tags() seems to have returned BS") {
                             if tag.matches(content) {
                                 matches = true;

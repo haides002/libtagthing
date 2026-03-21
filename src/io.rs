@@ -41,9 +41,34 @@ impl Media {
 
         let modified = std::fs::metadata(&self.path).unwrap().modified().unwrap();
 
+        let source = || -> Option<String> {
+            Some(
+                if let Some(property) = xmp.clone()?.property(xmp_ns::DC, "dc:source") {
+                    property.value
+                } else {
+                    "".to_string()
+                },
+            )
+        }();
+
+        let get_prpeert = |xmp: Option<XmpMeta>, prpeerty: &str| -> Option<String> {
+            Some(
+                if let Some(property) = xmp?.property_array(xmp_ns::DC, prpeerty).next() {
+                    property.value
+                } else {
+                    "".to_string()
+                },
+            )
+        };
+
         self.date = date;
         self.tags = tags;
         self.modified = modified;
+        self.title = get_prpeert(xmp.clone(), "dc:title");
+        self.description = get_prpeert(xmp.clone(), "dc:description");
+        self.source = source;
+
+        dbg!(xmp);
 
         Ok(())
     }
@@ -71,9 +96,9 @@ impl Media {
 
     /// Saves modifications to the struct instance to the associated file
     pub(crate) fn save(&self) -> Result<(), TagError> {
-        use xmp_toolkit::{XmpFile, XmpValue};
+        use xmp_toolkit::{XmpFile, XmpMeta, XmpValue};
 
-        if !self.supports_tags() {
+        if !self.supports_xmp() {
             return Err(TagError::TagsNotSupported);
         }
 
@@ -93,7 +118,7 @@ impl Media {
         };
 
         // read xmp from container
-        let mut xmp: xmp_toolkit::XmpMeta = match xmp_file.xmp() {
+        let mut xmp: XmpMeta = match xmp_file.xmp() {
             Some(xmp) => xmp,
             None => return Err(TagError::CouldNotReadXMP),
         };
@@ -111,6 +136,16 @@ impl Media {
             )
             .unwrap();
         }
+
+        let put_property = |xmp_meta: &mut XmpMeta, path: &str, new_content: Option<String>| {
+            if let Some(newer_content) = new_content {
+                let _ = xmp_meta.set_property(xmp_ns::DC, path, &XmpValue::new(newer_content));
+            };
+        };
+
+        put_property(&mut xmp, "dc:title", self.title.clone());
+        put_property(&mut xmp, "dc:source", self.source.clone());
+        put_property(&mut xmp, "dc:description", self.description.clone());
 
         match xmp_file.put_xmp(&xmp) {
             Ok(_) => {
@@ -150,6 +185,7 @@ pub fn read_path(path: std::path::PathBuf, recursive: bool) -> Vec<crate::Media>
 
         if current_path.is_dir() {
             todo_paths.append(
+                #[allow(clippy::nonminimal_bool)]
                 &mut current_path
                     .read_dir()
                     .expect("Directory couldn't get read")

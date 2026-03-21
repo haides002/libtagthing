@@ -12,6 +12,9 @@ pub struct Media {
     pub(crate) path: std::path::PathBuf,
     pub(crate) date: Option<chrono::DateTime<chrono::FixedOffset>>,
     pub(crate) tags: Option<Vec<Tag>>,
+    pub(crate) description: Option<String>,
+    pub(crate) source: Option<String>,
+    pub(crate) title: Option<String>,
     pub(crate) modified: SystemTime,
 }
 
@@ -22,6 +25,9 @@ impl Media {
             path: path.to_path_buf(),
             date: None,
             tags: None,
+            source: None,
+            title: None,
+            description: None,
             modified: SystemTime::now(),
         };
 
