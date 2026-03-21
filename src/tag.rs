@@ -18,13 +18,7 @@ impl Tag {
 
     /// Checks whether the tag matches the given criteria
     pub(crate) fn matches(&self, criteria_regex: &regex::Regex) -> bool {
-        let tag_no_namespace = &self
-            .tag_string
-            .split(":")
-            .last()
-            .expect("namespace split failed");
-
-        criteria_regex.is_match(tag_no_namespace)
+        criteria_regex.is_match(&self.tag_string)
     }
 }
 
