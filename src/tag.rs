@@ -48,7 +48,7 @@ impl crate::Media {
     }
 
     /// Returns true if the piece of media can hold tags
-    pub fn supports_tags(&self) -> bool {
+    pub fn supports_xmp(&self) -> bool {
         self.tags().is_some()
     }
 
