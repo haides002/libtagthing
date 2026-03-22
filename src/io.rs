@@ -68,8 +68,6 @@ impl Media {
         self.description = get_prpeert(xmp.clone(), "dc:description");
         self.source = source;
 
-        dbg!(xmp);
-
         Ok(())
     }
 
